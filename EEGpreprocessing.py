@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import logging
 import mne
 from mne.preprocessing import ICA
@@ -16,10 +17,10 @@ class EEGPreprocessor:
         self.logging_setup()
 
         self.frequency_bands = {
-            'Delta': '_1_3',
-            'Theta': '3_7',
-            'Alpha': '8_13',
-            'Beta': '13_30'
+            'Delta': (1, 3),
+            'Theta': (3, 7),
+            'Alpha': (8, 13),
+            'Beta': (13, 30)
         }
 
         self.regions = {
@@ -39,10 +40,12 @@ class EEGPreprocessor:
         self.logger = logging.getLogger(__name__)
     
     def clean_data(self) -> pd.DataFrame:
-        """this function will load, filter, apply ICA, and return cleaend EEG data"""
+        """this function will load, filter, apply ICA, and return cleaned EEG data"""
         self.logger.info("Loading data...")
         self.data = mne.io.read_raw_brainvision(self.data_path, preload=True)
-        self.data.set_channel_types({ch: "eeg" for ch in self.data.ch_names})
+
+        self.data.set_channel_types({ch: "eeg" for ch in self.data.ch_names if ch not in ['LE', 'RE', 'Ne', 'Ma']}) # drop non-EEG channels
+        self.data.drop_channels(['LE', 'RE', 'Ne', 'Ma'])
         self.data.set_montage('standard_1020')
 
         # butterworth bandpass filter
@@ -53,72 +56,98 @@ class EEGPreprocessor:
         rank = mne.compute_rank(self.data)
         ica = ICA(n_components=rank['eeg'], random_state=97, max_iter="auto", method="fastica")
         ica.fit(self.data)
+
         #detect eog artifact
         eog_inds, eog_scores = ica.find_bads_eog(self.data, ch_name='Fp1')
         ica.exclude = eog_inds
         raw_clean = ica.apply(self.data.copy())
 
-        data = raw_clean.get_data()
-        sfreq = raw_clean.info['sfreq']
-
         self.processed_data = raw_clean
         
-        self.logger.info(f"Data loaded and cleaned. Shape: {self.processed_data.shape}")
-        return self.processed_data, sfreq
+        self.logger.info(f"Data loaded and cleaned. Shape: {self.processed_data.get_data().shape}")
+        return self.processed_data
 
     def extract_band_features(self) -> pd.DataFrame:
         """Extract frequency band features by region. Returns DataFrame with regional frequency band powers"""
-        features = pd.DataFrame()
+        self.logger.info("Extracting frequency band features...")
 
-        for band_name, band_suffix in self.frequency_bands.items():
+        features_dict = {}
+
+        for band_name, (low_freq, high_freq) in self.frequency_bands.items():
+            self.logger.info(f"Processing {band_name} band ({low_freq}-{high_freq} Hz)...")
+
+            # Filter data for this band
+            filtered = self.processed_data.copy().filter(
+                low_freq, high_freq,
+                fir_design='firwin',
+                verbose=False
+            )
+            # Get data array shape
+            data = filtered.get_data()
+            # Calculate power for each channel
+            power = np.mean(data**2, axis=1)
+            # Create dictionary for each channel and power values
+            channel_powers = {ch: power[idx] for idx, ch in enumerate(self.processed_data.ch_names)}
+
+            # Calculate mean power for each brain region
             for region_name, channels in self.regions.items():
-                cols = [col for col in self.data.columns
-                        if band_suffix in col
-                        and '_Rel' in col
-                        and any(ch in col for ch in channels)]
-                if cols:
-                    # Calculate mean power for this band in this region
-                    features[f'{band_name}_{region_name}_mean'] = self.data[cols].mean(axis=1)
-                    
-            # Calculate overall mean for this band
-            band_cols = [col for col in self.data.columns 
-                        if band_suffix in col and '_Rel' in col]
-            features[f'{band_name}_mean'] = self.data[band_cols].mean(axis=1)
+                # Find channels that exist in both the region and the data
+                available_channels = [ch for ch in channels if ch in self.processed_data.ch_names]
+
+                if available_channels:
+                    region_powers = [channel_powers[ch] for ch in available_channels]
+                    features_dict[f'{band_name}_{region_name}_mean'] = np.mean(region_powers)
+                else:
+                    self.logger.warning(f"No channels found for {region_name} region")
+            # Calculate overall mean for this band (across all channels)
+            features_dict[f'{band_name}_mean'] = np.mean(power)
         
-        return features
-    def create_processed_dataset(self) -> pd.DataFrame:
-        """Create the final processed dataset for modeling."""
+        # Convert to DataFrame with single row
+        features_df = pd.DataFrame([features_dict])
+        
+        self.logger.info(f"Extracted {len(features_dict)} band features")
+        return features_df
+
+    def create_processed_dataset(self, condition: str = None) -> pd.DataFrame:
+        """Create the final processed dataset for modeling.
+        Args:
+            condition: Optionaly include condition label for 'chronic_pain' vs 'healthy_controls'
+        """
         self.logger.info("Creating processed dataset...")
         
         # Load and clean data if not already done
-        if self.data is None:
+        if self.processed_data is None:
             self.clean_data()
             
         # Extract frequency band features
         band_features = self.extract_band_features()
+
+        # Add condition if provided
+        if condition is not None:
+            band_features['Condition'] = condition
+       
+        self.processed_data_df = band_features
         
-        # Combine features with condition
-        self.processed_data = pd.concat(
-            [band_features, self.data[['Condition']]],
-            axis=1
-        )
-        
-        self.logger.info(f"Processed dataset created. Shape: {self.processed_data.shape}")
-        return self.processed_data
+        self.logger.info(f"Processed dataset created. Shape: {self.processed_data_df.shape}")
+        return self.processed_data_df
 
     def save_processed_data(self, output_path: str = None):
         """Save processed dataset to file."""
         if output_path is None:
-            output_path = 'data/processed_data.csv'
+            output_path = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data.csv'
             
-        if self.processed_data is None:
+        if self.processed_data_df is None:
             self.create_processed_dataset()
             
-        self.processed_data.to_csv(output_path, index=False)
+        self.processed_data_df.to_csv(output_path, index=False)
         self.logger.info(f"Processed data saved to {output_path}")
 
 if __name__ == "__main__":
-    preprocessor = EEGPreprocessor()
-    preprocessor.create_processed_dataset()
+    # example for only one file, will need to loop through all files
+    file_path = '/Users/arielmotsenyat/Documents/coding-workspace/mun_pain_data/sub-NCCPhc01/eeg/sub-NCCPhc01_task-closed_eeg.vhdr'
+    condition = 'chronic_pain' if 'hc' not in file_path.lower() else 'healthy_control'
+
+    preprocessor = EEGPreprocessor(file_path)
+    preprocessor.create_processed_dataset(condition=condition)
     preprocessor.save_processed_data()
 
