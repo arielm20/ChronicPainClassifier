@@ -6,8 +6,8 @@ from mne.preprocessing import ICA
 
 class EEGPreprocessor:
     """
-    Class for pre processing EEG data for identifying frequency band features of chronic pain.
-    Extracts frequency information from raw EEG data for AD analysis
+    Class for pre-processing EEG data for identifying frequency band features of chronic pain.
+    Extracts frequency band power information from raw EEG data for AD analysis
     """
     def __init__(self, data_path: str = '/Users/arielmotsenyat/Documents/coding-workspace/mun_pain_data'):
         """initialize preprocessor with correct data path"""
