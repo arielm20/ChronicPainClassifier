@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import mne
 from mne.preprocessing import ICA
+import os
 
 class EEGPreprocessor:
     """
@@ -143,11 +144,24 @@ class EEGPreprocessor:
         self.logger.info(f"Processed data saved to {output_path}")
 
 if __name__ == "__main__":
-    # example for only one file, will need to loop through all files
-    file_path = '/Users/arielmotsenyat/Documents/coding-workspace/mun_pain_data/sub-NCCPhc01/eeg/sub-NCCPhc01_task-closed_eeg.vhdr'
-    condition = 'chronic_pain' if 'hc' not in file_path.lower() else 'healthy_control'
-
-    preprocessor = EEGPreprocessor(file_path)
-    preprocessor.create_processed_dataset(condition=condition)
-    preprocessor.save_processed_data()
+    data_path = '/Users/arielmotsenyat/Documents/coding-workspace/mun_pain_data'
+    for sub in range(1,46):
+        sub_id = f"sub-{sub:02d}"
+    
+        hc_file = os.path.join(data_path, f"sub-NCCPhc{sub:02d}", 'eeg', f"sub-NCCPhc{sub:02d}_task-closed_eeg.vhdr")
+        pa_file = os.path.join(data_path, f"sub-NCCPpa{sub:02d}", 'eeg', f"sub-NCCPpa{sub:02d}_task-closed_eeg.vhdr")
+    
+        #skip participant if any file is missing
+        if not (os.path.exists(hc_file) and os.path.exists(pa_file)):
+            print(f"Skipping {sub_id}: missing healthy control or patient file")
+            continue
+    
+        for condition, file_path in zip(['hc', 'pa'], [hc_file, pa_file]):
+            if condition == 'hc':
+                preprocessor = EEGPreprocessor(hc_file)
+                preprocessor.create_processed_dataset(condition=condition)
+            elif condition == 'pa':
+                preprocessor = EEGPreprocessor(pa_file)
+                preprocessor.create_processed_dataset(condition=condition)
+            preprocessor.save_processed_data()
 
