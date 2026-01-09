@@ -128,7 +128,7 @@ class EEGPreprocessor:
             band_features['Condition'] = condition
        
         self.processed_data_df = band_features
-        
+        self.processed_data_df['Participant #'] = sub_id
         self.logger.info(f"Processed dataset created. Shape: {self.processed_data_df.shape}")
         return self.processed_data_df
 
@@ -140,12 +140,12 @@ class EEGPreprocessor:
         if self.processed_data_df is None:
             self.create_processed_dataset()
             
-        self.processed_data_df.to_csv(output_path, index=False)
+        self.processed_data_df.to_csv(output_path, header=False, index=False)
         self.logger.info(f"Processed data saved to {output_path}")
 
 if __name__ == "__main__":
     data_path = '/Users/arielmotsenyat/Documents/coding-workspace/mun_pain_data'
-    for sub in range(1,46):
+    for sub in range(1,48):
         sub_id = f"sub-{sub:02d}"
     
         hc_file = os.path.join(data_path, f"sub-NCCPhc{sub:02d}", 'eeg', f"sub-NCCPhc{sub:02d}_task-closed_eeg.vhdr")
@@ -160,8 +160,9 @@ if __name__ == "__main__":
             if condition == 'hc':
                 preprocessor = EEGPreprocessor(hc_file)
                 preprocessor.create_processed_dataset(condition=condition)
+                
             elif condition == 'pa':
                 preprocessor = EEGPreprocessor(pa_file)
                 preprocessor.create_processed_dataset(condition=condition)
-            preprocessor.save_processed_data()
+        preprocessor.save_processed_data()
 
