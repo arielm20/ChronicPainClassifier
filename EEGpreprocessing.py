@@ -140,7 +140,7 @@ class EEGPreprocessor:
         if self.processed_data_df is None:
             self.create_processed_dataset()
             
-        self.processed_data_df.to_csv(output_path, mode='a', header=False, index=False)
+        self.processed_data_df.to_csv(output_path, mode='a', header=True, index=False)
         self.logger.info(f"Processed data saved to {output_path}")
 
 if __name__ == "__main__":
