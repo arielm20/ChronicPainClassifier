@@ -89,8 +89,6 @@ class EEGFeature_analysis:
                 self.logger.info(f"Extracted {len(features_dict)} band features")
                 return features_df
 
-        
-
         def create_processed_dataset(self, condition: str = None) -> pd.DataFrame:
             """Create the final processed dataset for modeling.
             Args:
