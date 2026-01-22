@@ -1,124 +1,139 @@
 import pandas as pd
-import numpy as np
-import logging
-import mne
-from mne.preprocessing import ICA
-import os
-from pathlib import Path
-from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pathlib import Path
+from datetime import datetime
+import os
 
-class EEGFeature_analysis:
-     """Class to explore eeg features of the preprocessed eeg data"""
-     def __init__(self, data_path: str = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/clean_data/'):
-        """initialize preprocessed data path"""
-        self.data = self.load_data(data_path)
-        self.results_path = self._create_results_dir()
 
+class feature_analysis:
+    """A class to explore EEG data from the datasent focused on Chronic Pain analysis"""
+
+    def __init__(self, data_path: str = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data.csv'):
+        """Initialize data path"""
+        self.data = self._load_data(data_path)
+        self.results_path = self._create_results_directory()
         self.frequency_bands = {
             'Delta': (1, 3),
             'Theta': (3, 7),
             'Alpha': (8, 13),
             'Beta': (13, 30)
         }
+        self.regions = ['Frontal', 'Central', 'Parietal', 'Occipital', 'Temporal']
 
-        self.regions = {
-            'Frontal': ['Fp1', 'Fp2', 'F3', 'F4', 'F7', 'F8', 'Fz'],
-            'Central': ['C3', 'C4', 'Cz'],
-            'Parietal': ['P3', 'P4', 'Pz', 'POz'],
-            'Occipital': ['O1', 'O2'],
-            'Temporal': ['T3', 'T4', 'T5', 'T6']
-        }
-
-        def load_data(self, data_path):
-            "load preprocessed eeg data"
-            data = mne.io.read_raw_fif(data_path)
+    def _load_data(self, data_path: str) ->pd.DataFrame:
+        """Load EEG data from CSV file"""
+        try:
+            data = pd.read_csv(data_path)
+            required_columns = ['Condition']
+            if not all(col in data.columns for col in required_columns):
+                raise ValueError("Missing required columns in data")
             return data
-
-        def _create_results_directory(self):
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            results_dir = Path('results') / timestamp
-            os.makedirs(results_dir / 'plots', exist_ok=True)
-            os.makedirs(results_dir / 'stats', exist_ok=True)
-            return results_dir
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Data file not found at {data_path}")
         
-        def _save_plot(self, plt, name: str):
-            """Save plot to results directory."""
-            plt.savefig(self.results_path / 'plots' / f'{name}.png')
-            plt.close()
+    def _create_results_directory(self) -> Path:
+        """Create timestamped directory for results."""
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        results_dir = Path('results') / timestamp
+        os.makedirs(results_dir / 'plots' , exist_ok=True)
+        os.makedirs(results_dir / 'stats' , exist_ok=True)
+        return results_dir
+    
+    def _get_band_columns(self, band: str) -> list:
+        """Get columns related to specific frequency band"""
+        band_cols = [col for col in self.data.columns if band in col]
+        return band_cols
+    
+    def _save_plot(self, plt, name: str):
+        """Save plot to results directory"""
+        plt.savefig(self.results_path / 'plots' / f'{name}.png')
+        plt.close()
+    
+    def plot_band_distributions(self, band: str):
+        """Create distribution plot"""
+        band_cols = self._get_band_columns(band)
 
-        def extract_band_features(self) -> pd.DataFrame:
-                """Extract frequency band features by region. Returns DataFrame with regional frequency band powers"""
-                self.logger.info("Extracting frequency band features...")
+        plt.figure(figsize=(15, 10))
+        for col in band_cols[:5]: # Plot first 5 channels
+            sns.kdeplot(data=self.data, x=col, hue='Condition')
+        plt.title(f'{band} Band Power Distribution by Condition')
+        plt.xlabel('Power')
+        plt.ylabel('Density')
+        self._save_plot(plt, f'{band}_distribution')
+    
+    def plot_regional_comparisons(self):
+        """Create plots comparing power across brain regions between groups."""
+        for region in self.regions:
+            regional_cols = [col for col in self.data.columns if region in col and 'Alpha' in col]
+            if not regional_cols:
+                continue
 
-                features_dict = {}
-
-                for band_name, (low_freq, high_freq) in self.frequency_bands.items():
-                    self.logger.info(f"Processing {band_name} band ({low_freq}-{high_freq} Hz)...")
-
-                    # Filter data for this band
-                    filtered = self.processed_data.copy().filter(
-                        low_freq, high_freq,
-                        fir_design='firwin',
-                        verbose=False
-                    )
-                    # Get data array shape
-                    data = filtered.get_data()
-                    # Calculate power for each channel
-                    power = np.mean(data**2, axis=1)
-                    # Create dictionary for each channel and power values
-                    channel_powers = {ch: power[idx] for idx, ch in enumerate(self.processed_data.ch_names)}
-
-                    # Calculate mean power for each brain region
-                    for region_name, channels in self.regions.items():
-                        # Find channels that exist in both the region and the data
-                        available_channels = [ch for ch in channels if ch in self.processed_data.ch_names]
-
-                        if available_channels:
-                            region_powers = [channel_powers[ch] for ch in available_channels]
-                            features_dict[f'{band_name}_{region_name}_mean'] = np.mean(region_powers)
-                        else:
-                            self.logger.warning(f"No channels found for {region_name} region")
-                    # Calculate overall mean for this band (across all channels)
-                    features_dict[f'{band_name}_mean'] = np.mean(power)
-                
-                # Convert to DataFrame with single row
-                features_df = pd.DataFrame([features_dict])
-                
-                self.logger.info(f"Extracted {len(features_dict)} band features")
-                return features_df
-
-        def create_processed_dataset(self, condition: str = None) -> pd.DataFrame:
-            """Create the final processed dataset for modeling.
-            Args:
-                condition: Optionaly include condition label for 'chronic_pain' vs 'healthy_controls'
-            """
-            self.logger.info("Creating processed dataset...")
+            plt.figure(figsize=(12, 8))
+            data_to_plot = self.data.melt(
+                id_vars=['Condition'], 
+                value_vars=regional_cols,
+                var_name='Channel',
+                value_name='Power'
+            )
             
-            # Load and clean data if not already done
-            if self.processed_data is None:
-                self.clean_data()
-                
-            # Extract frequency band features
-            band_features = self.extract_band_features()
+            sns.boxplot(data=data_to_plot, x='Channel', y='Power', hue='Condition')
+            plt.title(f'{region} Region Power Comparison')
+            plt.xticks(rotation=45)
+            self._save_plot(plt, f'{region}_comparison')
 
-            # Add condition if provided
-            if condition is not None:
-                band_features['Condition'] = condition
+    def plot_TAR_analysis(self):
+        """Create visualizations for Theta/Alpha ratio analysis."""
+        tar_cols = [col for col in self.data.columns if 'TAR' in col]
         
-            self.processed_data_df = band_features
-            self.processed_data_df['Participant #'] = sub_id
-            self.logger.info(f"Processed dataset created. Shape: {self.processed_data_df.shape}")
-            return self.processed_data_df
+        plt.figure(figsize=(15, 10))
+        for col in tar_cols[:5]:  # Plot first 5 channels
+            sns.boxplot(data=self.data, x='Condition', y=col)
+            plt.title(f'Theta/Alpha Ratio by Condition - {col}')
+            self._save_plot(plt, f'TAR_{col}')
 
-        def save_processed_data(self, output_path: str = None):
-            """Save processed dataset to file."""
-            if output_path is None:
-                output_path = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data.csv'
-                
-            if self.processed_data_df is None:
-                self.create_processed_dataset()
-                
-            self.processed_data_df.to_csv(output_path, mode='a', header=True, index=False)
-            self.logger.info(f"Processed data saved to {output_path}")
+    def plot_coherence_patterns(self):
+        """Analyze and visualize coherence patterns."""
+        # Assuming coherence metrics are in the dataset
+        coherence_cols = [col for col in self.data.columns if any(
+            f'{region}-' in col for region in self.regions)]
+        
+        if coherence_cols:
+            plt.figure(figsize=(15, 10))
+            sns.heatmap(
+                self.data[coherence_cols].corr(), 
+                cmap='coolwarm',
+                center=0
+            )
+            plt.title('Coherence Pattern Correlation Matrix')
+            self._save_plot(plt, 'coherence_patterns')
+
+    def generate_summary_stats(self):
+        """Generate summary statistics for all analyses."""
+        stats = {}
+        
+        # Basic group statistics
+        stats['group_counts'] = self.data['Condition'].value_counts().to_dict()
+        
+        # Band power statistics
+        for band in self.frequency_bands.keys():
+            band_cols = self._get_band_columns(band)
+            stats[f'{band}_stats'] = self.data[band_cols].describe().to_dict()
+        
+        # Save statistics
+        pd.DataFrame(stats).to_csv(self.results_path / 'stats' / 'summary_stats.csv')
+
+    def run_full_analysis(self):
+        """Run complete analysis pipeline and save all results."""
+        # Run all analyses
+        for band in self.frequency_bands.keys():
+            self.plot_band_distributions(band)
+        
+        self.plot_regional_comparisons()
+        self.plot_TAR_analysis()
+        self.plot_coherence_patterns()
+        self.generate_summary_stats()
+
+if __name__ == "__main__":
+    explorer = feature_analysis()
+    explorer.run_full_analysis()
