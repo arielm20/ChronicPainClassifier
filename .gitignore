@@ -1,0 +1,12 @@
+# EEG Data files
+*.fif
+*.vhdr
+*.vmrk
+*.eeg
+*.dat
+*.set
+*.fdt
+
+# Data directories
+clean_data/
+mun_pain_data/
