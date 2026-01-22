@@ -6,6 +6,7 @@
 *.dat
 *.set
 *.fdt
+.DS_Store
 
 # Data directories
 clean_data/
