@@ -7,7 +7,7 @@ import os
 
 
 class feature_analysis:
-    """A class to explore EEG data from the datasent focused on Chronic Pain analysis"""
+    """A class to explore patterns in frequency band powers that were computed by the EEGPreprocessor class"""
 
     def __init__(self, data_path: str = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data.csv'):
         """Initialize data path"""
@@ -65,48 +65,70 @@ class feature_analysis:
     def plot_regional_comparisons(self):
         """Create plots comparing power across brain regions between groups."""
         for region in self.regions:
-            regional_cols = [col for col in self.data.columns if region in col and 'Alpha' in col]
-            if not regional_cols:
-                continue
-
-            plt.figure(figsize=(12, 8))
-            data_to_plot = self.data.melt(
-                id_vars=['Condition'], 
-                value_vars=regional_cols,
-                var_name='Channel',
-                value_name='Power'
-            )
+            plt.figure(figsize=(15, 10))
             
-            sns.boxplot(data=data_to_plot, x='Channel', y='Power', hue='Condition')
-            plt.title(f'{region} Region Power Comparison')
-            plt.xticks(rotation=45)
+            # Collect data for all bands in this region
+            plot_data = []
+            for band in self.frequency_bands.keys():
+                regional_cols = [col for col in self.data.columns 
+                            if region in col and band in col]
+                
+                if regional_cols:
+                    # Melt data for this band
+                    band_data = self.data.melt(
+                        id_vars=['Condition'], 
+                        value_vars=regional_cols,
+                        var_name='Channel',
+                        value_name='Power'
+                    )
+                    band_data['Band'] = band
+                    plot_data.append(band_data)
+            
+            if not plot_data:
+                continue
+            
+            # Combine all bands for this region
+            combined_data = pd.concat(plot_data, ignore_index=True)
+            
+            # Create boxplot with bands on x-axis and condition as hue
+            sns.boxplot(data=combined_data, x='Band', y='Power', hue='Condition')
+            plt.title(f'{region} Region Power Comparison Across Frequency Bands')
+            plt.ylabel('Power')
+            plt.legend(title='Condition')
             self._save_plot(plt, f'{region}_comparison')
 
     def plot_TAR_analysis(self):
         """Create visualizations for Theta/Alpha ratio analysis."""
         tar_cols = [col for col in self.data.columns if 'TAR' in col]
+    
+        if not tar_cols:
+            return
         
-        plt.figure(figsize=(15, 10))
-        for col in tar_cols[:5]:  # Plot first 5 channels
-            sns.boxplot(data=self.data, x='Condition', y=col)
-            plt.title(f'Theta/Alpha Ratio by Condition - {col}')
-            self._save_plot(plt, f'TAR_{col}')
+        for i, col in enumerate(tar_cols[:5]):  # Plot first 5 channels
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.boxplot(data=self.data, x='Condition', y=col, ax=ax)
+            ax.set_title(f'Theta/Alpha Ratio by Condition - {col}')
+            ax.set_ylabel('TAR')
+            self._save_plot(fig, f'TAR_{i}_{col.replace("/", "_")}')
 
     def plot_coherence_patterns(self):
         """Analyze and visualize coherence patterns."""
         # Assuming coherence metrics are in the dataset
         coherence_cols = [col for col in self.data.columns if any(
-            f'{region}-' in col for region in self.regions)]
+            f'_{region}_' in col for region in self.regions)]
         
         if coherence_cols:
-            plt.figure(figsize=(15, 10))
-            sns.heatmap(
-                self.data[coherence_cols].corr(), 
-                cmap='coolwarm',
-                center=0
-            )
-            plt.title('Coherence Pattern Correlation Matrix')
-            self._save_plot(plt, 'coherence_patterns')
+            for condition in self.data['Condition'].unique():
+                condition_data = self.data[self.data['Condition'] == condition]
+                
+                plt.figure(figsize=(20, 15))
+                sns.heatmap(
+                    condition_data[coherence_cols].corr(), 
+                    cmap='coolwarm',
+                    center=0
+                )
+                plt.title(f'Coherence Pattern Correlation Matrix - {condition}')
+                self._save_plot(plt, f'coherence_patterns_{condition}')
 
     def generate_summary_stats(self):
         """Generate summary statistics for all analyses."""
