@@ -113,7 +113,6 @@ class feature_analysis:
 
     def plot_coherence_patterns(self):
         """Analyze and visualize coherence patterns."""
-        # Assuming coherence metrics are in the dataset
         coherence_cols = [col for col in self.data.columns if any(
             f'_{region}_' in col for region in self.regions)]
         

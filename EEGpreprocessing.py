@@ -136,7 +136,7 @@ class EEGPreprocessor:
     def save_processed_data(self, output_path: str = None):
         """Save processed dataset to file."""
         if output_path is None:
-            output_path = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data.csv'
+            output_path = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data_unclean.csv'
             
         if self.processed_data_df is None:
             self.create_processed_dataset()
