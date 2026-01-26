@@ -10,7 +10,7 @@ from typing import Tuple
 class FeatureEngineer:
     """Class for engineering of eeg data using mutual information analysis"""
     
-    def __init__(self, data_path: str = "/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data.csv"):
+    def __init__(self, data_path: str = "/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data_rel.csv"):
         self.data_path = data_path
         self.data = None
         self.X = None

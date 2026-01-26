@@ -74,6 +74,9 @@ class EEGPreprocessor:
         self.logger.info("Extracting frequency band features...")
 
         features_dict = {}
+        band_regional_power = {}
+        band_total_power = {}
+        regional_total_powers = {}
 
         for band_name, (low_freq, high_freq) in self.frequency_bands.items():
             self.logger.info(f"Processing {band_name} band ({low_freq}-{high_freq} Hz)...")
@@ -88,6 +91,7 @@ class EEGPreprocessor:
             data = filtered.get_data()
             # Calculate power for each channel
             power = np.mean(data**2, axis=1)
+            band_total_power[band_name] = np.mean(power)
             # Create dictionary for each channel and power values
             channel_powers = {ch: power[idx] for idx, ch in enumerate(self.processed_data.ch_names)}
 
@@ -98,11 +102,35 @@ class EEGPreprocessor:
 
                 if available_channels:
                     region_powers = [channel_powers[ch] for ch in available_channels]
-                    features_dict[f'{band_name}_{region_name}_mean'] = np.mean(region_powers)
+                    region_power_mean = np.mean(region_powers)
+
+                    if region_name not in band_regional_power:
+                        band_regional_power[region_name] = {}
+                    band_regional_power[region_name][band_name] = region_power_mean
                 else:
                     self.logger.warning(f"No channels found for {region_name} region")
-            # Calculate overall mean for this band (across all channels)
-            features_dict[f'{band_name}_mean'] = np.mean(power)
+            
+            for region_name in self.regions.keys():
+                regional_total_powers[region_name] = sum(band_regional_power.get(region_name, {}).values())
+                for band_name in self.frequency_bands.keys():
+                    if region_name in band_regional_power and band_name in band_regional_power[region_name]:
+                        absolute_power = band_regional_power[region_name][band_name]
+                        regional_total = regional_total_powers[region_name]
+                    
+                    # Calculate relative power
+                    features_dict[f'{band_name}_{region_name}_rel'] = absolute_power / (regional_total+1e-10)
+
+            # Calculate relative power
+            total_power_all_bands = sum(band_total_power.values())
+            for band_name, band_power in band_total_power.items():
+                features_dict[f'{band_name}_total_rel'] = band_power / (total_power_all_bands+1e-10)
+                print(features_dict)
+
+            # Calculate TAR
+            if 'Theta' in band_total_power and 'Alpha' in band_total_power:
+                features_dict['theta_alpha_ratio'] = (features_dict['Theta_total_rel'] / features_dict['Alpha_total_rel'])
+            else:
+                continue
         
         # Convert to DataFrame with single row
         features_df = pd.DataFrame([features_dict])
@@ -131,12 +159,12 @@ class EEGPreprocessor:
         self.processed_data_df = band_features
         self.processed_data_df['Participant #'] = sub_id
         self.logger.info(f"Processed dataset created. Shape: {self.processed_data_df.shape}")
-        return self.processed_data_df
-
+        return self.processed_data_df        
+    
     def save_processed_data(self, output_path: str = None):
         """Save processed dataset to file."""
         if output_path is None:
-            output_path = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data_unclean.csv'
+            output_path = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data_rel.csv'
             
         if self.processed_data_df is None:
             self.create_processed_dataset()
