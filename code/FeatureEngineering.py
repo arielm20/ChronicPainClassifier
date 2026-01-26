@@ -39,7 +39,7 @@ class FeatureEngineer:
             
         # Separate features and target
         self.y = self.data['Condition']
-        self.X = self.data.drop('Condition', axis=1)
+        self.X = self.data.drop(['Condition', 'Participant #'], axis=1)
         
         # Log number of features
         self.logger.info(f"Initial feature matrix shape: {self.X.shape}")
