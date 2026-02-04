@@ -47,7 +47,8 @@ class EEGPreprocessor:
         self.data = mne.io.read_raw_brainvision(self.data_path, preload=True)
 
         self.data.set_channel_types({ch: "eeg" for ch in self.data.ch_names if ch not in ['LE', 'RE', 'Ne', 'Ma']}) # drop non-EEG channels
-        self.data.drop_channels(['LE', 'RE', 'Ne', 'Ma'])
+        # self.data.drop_channels(['LE', 'RE', 'Ne', 'Ma'])
+        self.data.drop_channels(['LE', 'RE'])
         self.data.set_montage('standard_1020')
 
         # butterworth bandpass filter
@@ -63,6 +64,7 @@ class EEGPreprocessor:
         eog_inds, eog_scores = ica.find_bads_eog(self.data, ch_name='Fp1')
         ica.exclude = eog_inds
         raw_clean = ica.apply(self.data.copy())
+        # raw_clean = self.data.copy()
 
         self.processed_data = raw_clean
         
@@ -164,7 +166,7 @@ class EEGPreprocessor:
     def save_processed_data(self, output_path: str = None):
         """Save processed dataset to file."""
         if output_path is None:
-            output_path = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data_rel.csv'
+            output_path = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data_rel_all_pain.csv'
             
         if self.processed_data_df is None:
             self.create_processed_dataset()
@@ -175,23 +177,32 @@ class EEGPreprocessor:
 
 if __name__ == "__main__":
     data_path = '/Users/arielmotsenyat/Documents/coding-workspace/classifier_data/mun_pain_data'
-    for sub in range(1,48):
+    for sub in range(1,47):
         sub_id = f"sub-{sub:02d}"
     
-        hc_file = os.path.join(data_path, f"sub-NCCPhc{sub:02d}", 'eeg', f"sub-NCCPhc{sub:02d}_task-closed_eeg.vhdr")
-        pa_file = os.path.join(data_path, f"sub-NCCPpa{sub:02d}", 'eeg', f"sub-NCCPpa{sub:02d}_task-closed_eeg.vhdr")
+        cbp_file = os.path.join(data_path, f"sub-CBPpa{sub:02d}", 'eeg', f"sub-CBPpa{sub:02d}_task-closed_eeg.vhdr")
+        fm_file = os.path.join(data_path, f"sub-FMpa{sub:02d}", 'eeg', f"sub-FMpa{sub:02d}_task-closed_eeg.vhdr")
+        nccp_file = os.path.join(data_path, f"sub-NCCPpa{sub:02d}", 'eeg', f"sub-NCCPpa{sub:02d}_task-closed_eeg.vhdr")
     
         #skip participant if any file is missing
-        if not (os.path.exists(hc_file) and os.path.exists(pa_file)):
-            print(f"Skipping {sub_id}: missing healthy control or patient file")
-            continue
+        # if not (os.path.exists(cbp_file) and os.path.exists(fm_file) and os.path.exists(nccp_file)):
+        #     print(f"Skipping {sub_id}: missing patient file")
+        #     continue
     
-        for condition, file_path in zip(['hc', 'pa'], [hc_file, pa_file]):
-            if condition == 'hc':
-                preprocessor = EEGPreprocessor(hc_file)
+        for condition, file_path in zip(['cbp', 'fm', 'nccp'], [cbp_file, fm_file, nccp_file]):
+            if not(os.path.exists(file_path)):
+                print(f"Skipping {sub_id} {condition}: missing patient file")
+                continue
+            
+            if condition == 'cbp':
+                preprocessor = EEGPreprocessor(cbp_file)
                 preprocessor.create_processed_dataset(condition=condition)
                 
-            elif condition == 'pa':
-                preprocessor = EEGPreprocessor(pa_file)
+            elif condition == 'fm':
+                preprocessor = EEGPreprocessor(fm_file)
+                preprocessor.create_processed_dataset(condition=condition)
+            
+            elif condition == 'nccp':
+                preprocessor = EEGPreprocessor(nccp_file)
                 preprocessor.create_processed_dataset(condition=condition)
             preprocessor.save_processed_data()

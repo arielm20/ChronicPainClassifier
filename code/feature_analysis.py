@@ -9,7 +9,7 @@ import os
 class feature_analysis:
     """A class to explore patterns in frequency band powers that were computed by the EEGPreprocessor class"""
 
-    def __init__(self, data_path: str = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data_rel.csv'):
+    def __init__(self, data_path: str = '/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data_rel_all_pain.csv'):
         """Initialize data path"""
         self.data = self._load_data(data_path)
         self.results_path = self._create_results_directory()

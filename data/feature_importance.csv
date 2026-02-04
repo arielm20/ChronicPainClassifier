@@ -1,5 +1,5 @@
 feature,mi_score,frequency_band
-Delta_Parietal_rel,0.103302609,Delta
-Theta_Temporal_rel,0.063133942,Theta
-Alpha_Temporal_rel,0.063133942,Alpha
-Beta_Occipital_rel,0.063133942,Beta
+Delta_total_rel,0.492350728,Delta
+Theta_total_rel,0.43838855,Theta
+Beta_total_rel,0.279582253,Beta
+Alpha_total_rel,0.096618027,Alpha
