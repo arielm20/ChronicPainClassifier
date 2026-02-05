@@ -68,12 +68,13 @@ class ModelTrainer:
         self.X = pd.read_csv(self.X_path)
         self.y = pd.read_csv(self.y_path)['Condition']
         
-        mask = self.y.isin(['nccp', 'cbp'])
+        mask = self.y.isin(['nccp', 'cbp', 'fm'])
         self.X = self.X[mask].reset_index(drop=True)
         self.y = self.y[mask].reset_index(drop=True)
         
-        # Encode labels: nccp -> 0, cbp -> 1
-        self.y = (self.y == 'cbp').astype(int)
+        # Map to integers
+        label_map = {'nccp':0, 'cbp':1, 'fm':2}
+        self.y = self.y.map(label_map)
         
         # Apply SMOTE for balanced sampling
         smote = SMOTE(random_state=self.random_state)
@@ -164,7 +165,7 @@ class ModelTrainer:
         
         return scores.mean()
 
-    def optimize_and_train(self, n_trials: int = 100) -> Any:
+    def optimize_and_train(self, n_trials: int = 1000) -> Any:
         """Optimize model selection and hyperparameters."""
         study = optuna.create_study(direction='maximize')
         study.optimize(self.objective, n_trials=n_trials)
@@ -182,7 +183,7 @@ class ModelTrainer:
         
         return self.best_model
 
-    def run_pipeline(self, n_trials: int = 100):
+    def run_pipeline(self, n_trials: int = 1000):
         """Run complete training pipeline."""
         # Load data
         self.load_data()
@@ -210,7 +211,7 @@ class ModelTrainer:
             cv=cv,
             scoring={
                 'balanced_accuracy': 'balanced_accuracy',
-                'roc_auc': 'roc_auc',
+                'roc_auc': 'roc_auc_ovr_weighted',
                 'f1': 'f1_weighted'
             },
             return_estimator=True,
@@ -219,17 +220,17 @@ class ModelTrainer:
         
         # Get predictions using the fitted pipelines
         y_pred = np.zeros_like(self.y)
-        y_prob = np.zeros_like(self.y, dtype=float)
+        y_prob = np.zeros((len(self.y), 3), dtype=float)
         
         for fold_idx, (train_idx, test_idx) in enumerate(cv.split(self.X, self.y)):
             fitted_pipeline = cv_results['estimator'][fold_idx]
-            y_pred[test_idx] = fitted_pipeline.predict(self.X.iloc[test_idx])
-            y_prob[test_idx] = fitted_pipeline.predict_proba(self.X.iloc[test_idx])[:, 1]
+            y_pred[test_idx] = fitted_pipeline.predict(self.X.iloc[test_idx]).ravel()
+            y_prob[test_idx] = fitted_pipeline.predict_proba(self.X.iloc[test_idx])
         
         # Compute metrics
         metrics = {
             'balanced_accuracy': balanced_accuracy_score(self.y, y_pred),
-            'roc_auc': roc_auc_score(self.y, y_prob),
+            'roc_auc': roc_auc_score(self.y, y_prob, multi_class='ovr', average='weighted'),
             'f1': f1_score(self.y, y_pred, average='weighted'),
             'confusion_matrix': confusion_matrix(self.y, y_pred),
             'classification_report': classification_report(self.y, y_pred)
@@ -269,8 +270,8 @@ class ModelTrainer:
             metrics['confusion_matrix'], 
             annot=True, 
             fmt='d',
-            xticklabels=['NCCP', 'CBP'],
-            yticklabels=['NCCP', 'CBP']
+            xticklabels=['NCCP', 'CBP', 'FM'],
+            yticklabels=['NCCP', 'CBP', 'FM']
         )
         plt.title('Confusion Matrix')
         plt.savefig(self.results_path / 'plots' / 'confusion_matrix.png')

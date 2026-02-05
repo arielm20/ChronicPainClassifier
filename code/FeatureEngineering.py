@@ -173,8 +173,6 @@ class FeatureEngineer:
             'Delta': ['Delta'],
             'Theta': ['Theta'],
             'Alpha': ['Alpha'],
-            'BetaSlow': ['BetaSlow'],
-            'BetaFast': ['BetaFast'],
             'Beta': ['Beta'],
             'PDDM': ['PDDM']  # Power Distribution Distance Measure
         }

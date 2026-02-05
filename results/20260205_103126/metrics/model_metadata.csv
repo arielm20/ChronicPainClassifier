@@ -1,0 +1,12 @@
+,model_name,timestamp,parameters,balanced_accuracy,roc_auc,f1,classification_report
+0,Pipeline,2026-02-05 10:31:49,"{'memory': None, 'steps': [('scaler', StandardScaler()), ('model', RandomForestClassifier(max_depth=13, min_samples_split=3, n_estimators=211,
+                       random_state=42))], 'transform_input': None, 'verbose': False, 'scaler': StandardScaler(), 'model': RandomForestClassifier(max_depth=13, min_samples_split=3, n_estimators=211,
+                       random_state=42), 'scaler__copy': True, 'scaler__with_mean': True, 'scaler__with_std': True, 'model__bootstrap': True, 'model__ccp_alpha': 0.0, 'model__class_weight': None, 'model__criterion': 'gini', 'model__max_depth': 13, 'model__max_features': 'sqrt', 'model__max_leaf_nodes': None, 'model__max_samples': None, 'model__min_impurity_decrease': 0.0, 'model__min_samples_leaf': 1, 'model__min_samples_split': 3, 'model__min_weight_fraction_leaf': 0.0, 'model__monotonic_cst': None, 'model__n_estimators': 211, 'model__n_jobs': None, 'model__oob_score': False, 'model__random_state': 42, 'model__verbose': 0, 'model__warm_start': False}",0.7727272727272727,0.8218549127640037,0.772675086107922,"              precision    recall  f1-score   support
+
+           0       0.78      0.76      0.77        66
+           1       0.76      0.79      0.78        66
+
+    accuracy                           0.77       132
+   macro avg       0.77      0.77      0.77       132
+weighted avg       0.77      0.77      0.77       132
+"
