@@ -37,14 +37,14 @@ class FeatureEngineer:
         if self.data is None:
             self.load_data()
             
-        # Separate features and target
+        # separate features and target
         self.y = self.data['Condition']
         self.X = self.data.drop(['Condition', 'Participant #'], axis=1)
         
-        # Log number of features
+        # log number of features
         self.logger.info(f"Initial feature matrix shape: {self.X.shape}")
         
-        # Handle missing values
+        # handle missing values
         self.X = self.X.fillna(self.X.mean())
         self.y = self.y[self.X.index]
         
