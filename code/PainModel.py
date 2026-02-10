@@ -10,21 +10,12 @@ from datetime import datetime
 from imblearn.over_sampling import SMOTE
 
 # ML imports
-from sklearn.model_selection import (
-    cross_val_score, StratifiedKFold, 
-    cross_validate
-)
-from sklearn.metrics import (
-    roc_auc_score, classification_report, 
-    f1_score, confusion_matrix, balanced_accuracy_score
-)
+from sklearn.model_selection import (cross_val_score, StratifiedKFold, cross_validate)
+from sklearn.metrics import (roc_auc_score, classification_report, f1_score, confusion_matrix, balanced_accuracy_score)
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 from catboost import CatBoostClassifier
-from sklearn.ensemble import (
-    GradientBoostingClassifier,
-    RandomForestClassifier
-)
+from sklearn.ensemble import (GradientBoostingClassifier,RandomForestClassifier)
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 
@@ -56,7 +47,7 @@ class ModelTrainer:
         }
         
     def _setup_results_dir(self) -> Path:
-        """Create timestamped results directory."""
+        """Create timestamped results directory for ML classifiers."""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         results_dir = Path('results') / timestamp
         for subdir in ['models', 'plots', 'metrics']:
@@ -82,8 +73,16 @@ class ModelTrainer:
         
         return self.X, self.y
 
-    def objective(self, trial: optuna.Trial) -> float:
-        """Optuna objective function for model selection and optimization."""
+    def search_opt_model(self, trial: optuna.Trial) -> float:
+        """
+        Optuna objective function for model selection and optimization.
+        
+        Args:
+            trial: Optuna trial object that suggests model type and hyperparameters to evaluate
+            
+        Returns:
+            mean balanced accuracy from cross-validation, representing model-hyperparameter performance
+        """
         # Select model type
         model_type = trial.suggest_categorical('model_type', list(self.models.keys()))
         
@@ -165,10 +164,19 @@ class ModelTrainer:
         
         return scores.mean()
 
-    def optimize_and_train(self, n_trials: int = 1000) -> Any:
-        """Optimize model selection and hyperparameters."""
+    def optimize_and_train(self, n_trials: int = 500) -> Any:
+        """
+        Optimize model selection and hyperparameters, then train the selected model
+        
+        Args:
+            n_trials: number of optimization trials to run
+        
+        Returns:
+            Pipeline: Trained sklearn pipeline containing StandardScaler and the best model
+                fitted on the full training data with optimal hyperparameters
+        """
         study = optuna.create_study(direction='maximize')
-        study.optimize(self.objective, n_trials=n_trials)
+        study.optimize(self.search_opt_model, n_trials=n_trials)
         
         self.best_params = study.best_params
         model_type = self.best_params.pop('model_type')  # Remove model_type from params
@@ -183,8 +191,15 @@ class ModelTrainer:
         
         return self.best_model
 
-    def run_pipeline(self, n_trials: int = 1000):
-        """Run complete training pipeline."""
+    def run_pipeline(self, n_trials: int = 500):
+        """Run complete training pipeline.
+        
+        Args:
+            n_trials: number of trials to run
+        
+        Returns:
+            metrics for best model
+        """
         # Load data
         self.load_data()
         
@@ -200,7 +215,17 @@ class ModelTrainer:
         return model, metrics
 
     def evaluate_model(self, model) -> Dict[str, Any]:
-        """Evaluate model performance with proper scaling."""
+        """
+        Evaluate model performance with proper scaling.
+        
+        Args:
+            model: best performing model Pipeline
+        
+        Returns:
+            Dictionary containing performance metrics
+        """
+
+        # Cross-validation
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=self.random_state)
         
         # Use cross_validate to get predictions while respecting the pipeline

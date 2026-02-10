@@ -67,7 +67,8 @@ class EEGPreprocessor:
         return self.processed_data
 
     def extract_band_features(self) -> pd.DataFrame:
-        """Extract relative frequency band power by region. Returns DataFrame with relative band powers by region"""
+        """Extract relative frequency band power by region and total relative power by frequency band.
+          Returns DataFrame with relative band powers"""
         self.logger.info("Extracting frequency band features...")
 
         features_dict = {}
@@ -129,7 +130,7 @@ class EEGPreprocessor:
         return features_df
 
     def create_processed_dataset(self, condition: str = None) -> pd.DataFrame:
-        """Create the final processed dataset for modeling.
+        """Create the final processed dataset.
         Args:
             condition: Optionaly include condition label 'cbp' for chronic back pain, 'fm' for fibromyalgia, and 'nccp for mixed chronic pain conditions
         """

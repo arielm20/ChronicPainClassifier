@@ -51,7 +51,7 @@ class feature_analysis:
         plt.close()
     
     def plot_band_distributions(self, band: str):
-        """Create distribution plot"""
+        """Create distribution plot for each band"""
         band_cols = self._get_band_columns(band)
 
         plt.figure(figsize=(15, 10))
@@ -63,7 +63,7 @@ class feature_analysis:
         self._save_plot(plt, f'{band}_distribution')
     
     def plot_rel_comparisons(self):
-        """Create plots comparing relative power across frequency bands between groups."""
+        """Create plots comparing total relative power across frequency bands between groups."""
         plt.figure(figsize=(15, 10))
         
         # collect data for all bands
@@ -96,7 +96,7 @@ class feature_analysis:
         self._save_plot(plt, 'relative_power_comparison')
 
     def plot_regional_comparisons(self):
-        """Create plots comparing relative power between groups."""
+        """Create seperate plots for each brain region comparing relative power between groups."""
         for region in self.regions:
             plt.figure(figsize=(15, 10))
             # collect data for all bands in this region
@@ -129,7 +129,7 @@ class feature_analysis:
             self._save_plot(plt, f'{region}_comparison')
 
     def plot_TAR_analysis(self):
-        """Create visualizations for Theta/Alpha ratio analysis."""
+        """Create Theta/Alpha ratio plot comparing total TAR for each group"""
         tar_cols = [col for col in self.data.columns if 'theta_alpha_ratio' in col]
     
         if not tar_cols:

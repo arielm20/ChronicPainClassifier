@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import Tuple
 
 class FeatureEngineer:
-    """Class for engineering of eeg data using mutual information analysis"""
+    """Class for determining significant features using mutual information analysis"""
     
-    def __init__(self, data_path: str = "/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data_rel_all_pain.csv"):
+    def __init__(self, data_path = "/Users/arielmotsenyat/Documents/coding-workspace/ChronicPainClassifier/data/processed_data_rel_all_pain.csv"):
         self.data_path = data_path
         self.data = None
         self.X = None
@@ -33,13 +33,17 @@ class FeatureEngineer:
         return self.data
         
     def create_feature_matrix(self) -> Tuple[pd.DataFrame, pd.Series]:
-        """Create feature matrix and target vector."""
+        """Create feature matrix and target vector.
+            
+        Returns:
+            Tuple[X: power data, y: pain conditions]"""
+        
         if self.data is None:
             self.load_data()
             
         # separate features and target
         self.y = self.data['Condition']
-        self.X = self.data.drop(['Condition', 'Participant #'], axis=1)
+        self.X = self.data.drop(['Condition', 'Participant #'], axis=1) # only the power data
         
         # log number of features
         self.logger.info(f"Initial feature matrix shape: {self.X.shape}")
@@ -52,7 +56,7 @@ class FeatureEngineer:
         
         return self.X, self.y
     
-    def select_features_mi(self, n_features: int = 20) -> pd.DataFrame:
+    def select_features_mi(self, n_features = 20) -> pd.DataFrame:
         """
         Select features using mutual information.
         
@@ -85,33 +89,34 @@ class FeatureEngineer:
         return selected_features
     
     def apply_pca(self, X: pd.DataFrame, n_components: float = 0.99) -> pd.DataFrame:
-        """Apply PCA to reduce dimensionality."""
+        """Apply Principle Component Analysis to reduce dimensionality.
+        
+        Args:
+            X: features df, n_components: cumulative variance for PCA
+            
+        Returns:
+            pd.DataFrame: PCA selected features
+        """
         pca = PCA(n_components=n_components)
         X_pca = pca.fit_transform(X)
         
         # Log explained variance ratio
-        cum_var_ratio = np.cumsum(pca.explained_variance_ratio_)
-        n_components_selected = len(cum_var_ratio)
+        var_ratio = np.cumsum(pca.explained_variance_ratio_)
+        n_components_selected = len(var_ratio)
         
         self.logger.info(f"PCA reduced dimensions to {n_components_selected} components")
-        self.logger.info(f"Cumulative explained variance ratio: {cum_var_ratio[-1]:.3f}")
+        self.logger.info(f"Cumulative explained variance ratio: {var_ratio[-1]:.3f}")
         
         # Create column names for PCA features
         pca_columns = [f'PC{i+1}' for i in range(X_pca.shape[1])]
         return pd.DataFrame(X_pca, columns=pca_columns)
-    
-    def scale_features(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Scale features using StandardScaler."""
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
-        return pd.DataFrame(X_scaled, columns=X.columns)
     
     def create_mi_importance_report(self, X: pd.DataFrame) -> pd.DataFrame:
         """
         Create a report of feature importances using mutual information.
         
         Args:
-            X: Feature matrix
+            X: relative power features post-PCA
             
         Returns:
             pd.DataFrame: Feature importance report
@@ -133,8 +138,8 @@ class FeatureEngineer:
         Save the prepared ML dataset.
             
         Args:
-            X: Prepared feature matrix
-            y: Target vector
+            X: Prepared feature matrix (relative power features post-PCA)
+            y: Target vector (pain conditions)
             output_dir: Directory to save the files
         """
         output_path = Path(output_dir)
@@ -146,9 +151,9 @@ class FeatureEngineer:
             
         self.logger.info(f"ML dataset saved to {output_path}")
 
-    def select_unique_frequency_features(self, max_features: int = 8) -> pd.DataFrame:
+    def select_unique_frequency_features(self, max_features = 8) -> pd.DataFrame:
         """
-        Select features ensuring unique frequency representations.
+        Select features with highest MI scores
         
         Args:
             max_features: Maximum number of unique frequency features to select
@@ -174,7 +179,6 @@ class FeatureEngineer:
             'Theta': ['Theta'],
             'Alpha': ['Alpha'],
             'Beta': ['Beta'],
-            'PDDM': ['PDDM']  # Power Distribution Distance Measure
         }
         
         # Function to identify frequency band of a feature
@@ -207,27 +211,20 @@ class FeatureEngineer:
         
         return selected_features_df
 
-    def create_ml_ready_dataset(
-        self,
-        use_pca: bool = True,
-        n_components: float = 0.99,
-        max_features: int = 8
-    ) -> Tuple[pd.DataFrame, pd.Series]:
+    def create_ml_ready_dataset(self, n_components: float = 0.99, max_features: int = 8) -> Tuple[pd.DataFrame, pd.Series]:
         """
         Create and save a complete ML-ready dataset with unique frequency features.
         """
         # Load and prepare initial feature matrix
         self.create_feature_matrix()
         
-        # Select unique frequency features (using unscaled features)
+        # Select unique frequency features
         selected_features = self.select_unique_frequency_features(max_features=max_features)
         X_selected = self.X[selected_features['feature']]
         
-        # Apply PCA if requested
-        if use_pca:
-            X_prepared = self.apply_pca(X_selected, n_components=n_components)
-        else:
-            X_prepared = X_selected
+        # Apply PCA
+        X_prepared = self.apply_pca(X_selected, n_components=n_components)
+        
         
         # Save feature importance report
         selected_features.to_csv('data/feature_importance.csv', index=False)
@@ -238,7 +235,6 @@ class FeatureEngineer:
         return X_prepared, self.y
 
 
-    
 if __name__ == "__main__":
     engineer = FeatureEngineer()
     X, y = engineer.create_ml_ready_dataset()
