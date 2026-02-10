@@ -31,30 +31,30 @@ The project analyzes EEG data to:
 ## Main Findings
 The analysis identified several frequency bands that distinguish FM from NCCP and CBP:
     
-    1. Delta (1-3 Hz) - Global
-    2. Theta (3-5 Hz) - Global
+1. Delta (1-3 Hz) - Global
+2. Theta (3-5 Hz) - Global
 
 The best performing model (XGBoost) achieved the following results for multi-class classification:
 
-    1. Balanced accuracy: 79%
-    2. F1 Score: 79%
-    3. ROC-AUC: 0.88
+1. Balanced accuracy: 79%
+2. F1 Score: 79%
+3. ROC-AUC: 0.88
 
 However, for classifying FM vs CBP and NCCP the following results were achieved:
 
-    1. Precision: 96%
-    2. Recall: 100%
-    3. F1 Score: 98%
+1. Precision: 96%
+2. Recall: 100%
+3. F1 Score: 98%
 
 Considering the features for CBP and NCCP overlapped, these results make sense. A detailed report can be found in the report.md file.
 
 ## Requirements
 Python 3.8+
 Required packages:
-    - pandas
-    - numpy
-    - scikit-learn
-    - xgboost
-    - catboost
-    - optuna
-    - imbalanced-learn
+- pandas
+- numpy
+- scikit-learn
+- xgboost
+- catboost
+- optuna
+- imbalanced-learn
