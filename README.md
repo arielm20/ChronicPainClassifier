@@ -11,22 +11,22 @@ The project analyzes EEG data to:
     3. Analyze the trade-offs between different classification approaches
 
 ## Repository Structure
-.
-├── data/                                   # EEG Data directory is not included in repo
-│   ├── processed_data_rel_all_pain.csv     # frequency band power for each band and region
-│   ├── feature_importance.csv              # mutual information results
-│   ├── X_ml.csv
-│   └── y_ml.csv
-├── results/                   # Feature exploration results and model outputs
-│   ├── models/
-│   ├── plots/
-│   └── metrics/
-├── EEGpreprocessing.py       # Initial data preprocessing pipeline (filtering, ICA, and frequency power calculations)
-├── feature_analysis.py       # Feature analysis and exploration
-├── FeatureEngineering.py     # Feature selection and engineering
-├── PainModel.py              # Model training and evaluation
-├── report.md                 # Detailed analysis report
-└── README.md                 # This file
+    .
+    ├── data/                                   # EEG Data directory is not included in repo
+    │   ├── processed_data_rel_all_pain.csv     # frequency band power for each band and region
+    │   ├── feature_importance.csv              # mutual information results
+    │   ├── X_ml.csv
+    │   └── y_ml.csv
+    ├── results/                   # Feature exploration results and model outputs
+    │   ├── models/
+    │   ├── plots/
+    │   └── metrics/
+    ├── EEGpreprocessing.py       # Initial data preprocessing pipeline (filtering, ICA, and frequency power calculations)
+    ├── feature_analysis.py       # Feature analysis and exploration
+    ├── FeatureEngineering.py     # Feature selection and engineering
+    ├── PainModel.py              # Model training and evaluation
+    ├── report.md                 # Detailed analysis report
+    └── README.md                 # This file
 
 ## Main Findings
 The analysis identified several frequency bands that distinguish FM from NCCP and CBP:
