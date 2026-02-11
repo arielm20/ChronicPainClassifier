@@ -12,3 +12,4 @@
 
 # Data directories
 /catboost_info
+/results/catboost_info
