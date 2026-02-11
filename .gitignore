@@ -6,9 +6,9 @@
 *.dat
 *.set
 *.fdt
+
+# other files
 *.DS_Store
 
 # Data directories
-clean_data/
-mun_pain_data/
-.DS_Store
+/catboost_info
