@@ -25,12 +25,13 @@ Optuna was used to evaluate multiple classifier types as well as their hyperpara
 XGBoost emerged as the best-performing model, with the following hyperparameter configuration:
 
 |Parameter         | Value     |
-| :-------------:  | :-------: |
+| :----------:     | :-------: |
 | Learning Rate    | 0.012     | 
 | Estimators       | 817       | 
 | Max Depth        | 5         | 
 | Min Child Weight | 7         |
 | Gamma            | 1.99e-10  |
+
 The multi-class classifier achieved the following results:
 1. Chronic Back Pain
     - Sensitivity: 70%
