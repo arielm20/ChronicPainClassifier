@@ -1,14 +1,15 @@
 # EEG Frequency Analysis of Chronic Pain Using Machine Learning
 
-This project has two aims (1) Identify frequency-band based EEG markers of 3 different chronic pain conditions: Chronic Back Pain (CBP), Fibromyalgia (FM), and Nocioceptive Chronic Pain (NCCP) and (2) Use these markers to develop multiclass Machine Learning classifiers.
+This project has two aims (1) to identify frequency-band based EEG markers of 3 different chronic pain conditions: Chronic Back Pain (CBP), Fibromyalgia (FM), and Nocioceptive Chronic Pain (NCCP), and (2) to use these markers to develop multiclass Machine Learning classifiers.
 
-Data for this project is based on data from the following article "Exploring electroencephalographic chronic pain biomarkers: a mega-analysis" by Bott et al., 2025 which can be found in the repository. In addition, the EEG dataset can be found here: https://osf.io/srpbg/overview. Finally, this project is based on the the ADClassifier by itayinbarr on github (repo: https://github.com/itayinbarr/ADclassifier/tree/main)
+Data for this project is based on data from the following article, "Exploring electroencephalographic chronic pain biomarkers: a mega-analysis" by Bott et al., 2025 which, can be found in the repository. In addition, the EEG dataset can be found here: https://osf.io/srpbg/overview. Finally, this project is based on the ADClassifier by itayinbarr on GitHub (repo: https://github.com/itayinbarr/ADclassifier/tree/main)
 
 ## Overview
 The project analyzes EEG data to:
+
     1. Identify characteristic frequencies that distinguish between FM, CBP, and NCCP patients
     2. Validate ML models for chronic pain detection
-    3. Analyze the trade-offs between different classification approaches
+    3. Analyze the clinical validity of these classification models
 
 ## Repository Structure
     .
@@ -40,7 +41,7 @@ The best performing model (XGBoost) achieved the following results for multi-cla
 2. F1 Score: 79%
 3. ROC-AUC: 0.88
 
-However, for classifying FM vs CBP and NCCP the following results were achieved:
+However, for classifying FM vs CBP and NCCP, the following results were achieved:
 
 1. Precision: 96%
 2. Recall: 100%
