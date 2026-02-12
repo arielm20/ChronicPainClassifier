@@ -6,10 +6,9 @@ Data for this project is based on data from the following article, "Exploring el
 
 ## Overview
 The project analyzes EEG data to:
-
-    1. Identify characteristic frequencies that distinguish between FM, CBP, and NCCP patients
-    2. Validate ML models for chronic pain detection
-    3. Analyze the clinical validity of these classification models
+1. Identify characteristic frequencies that distinguish between FM, CBP, and NCCP patients
+2. Validate ML models for chronic pain detection
+3. Analyze the clinical validity of these classification models
 
 ## Repository Structure
     .
